@@ -442,7 +442,7 @@ keySchedule (long long int* keys, long long int key)
   // apply key to PC-1
   for (k = 0; k < PC_1_SIZE; k++)
   {
-    p |= ((lMask & (key << PC_1[k] - 1)) >> k);
+    p |= ((lMask & (key << (PC_1[k] - 1))) >> k);
   }
 
   // compute C0, D0
@@ -462,7 +462,7 @@ keySchedule (long long int* keys, long long int key)
     // apply PC-2 to produce key(round)
     for (k = 0, p = 0x0; k < PC_2_SIZE; k++)
     {
-      p |= ((lMask & (t << PC_2[k] - 1)) >> k);
+      p |= ((lMask & (t << (PC_2[k] - 1))) >> k);
     }
     keys[round] = p;
   }
@@ -489,9 +489,9 @@ bool
 test (void)
 {
   bool test_flag = true;
-  long long unsigned test_keys[16];
+  long long test_keys[16];
   unsigned int test_f;
-  long long unsigned test_M, test_C;
+  long long test_M, test_C;
 
   long long int k, t;
   int i;
