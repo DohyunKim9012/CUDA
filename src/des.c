@@ -522,10 +522,7 @@ readfile_helper (long long **dst, char *filename)
   // Set to null for padding reasons
   if (original_file_size % 8 > 0)
   {
-    for (int i = 0; i < blocks; i++)
-    {
-      buffer[i] = 0;
-    }
+      buffer[blocks-1] = 0;
   }
 
   fread(buffer, file_size, 1, fp);
