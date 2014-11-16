@@ -583,6 +583,7 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
 void
 encryption (char *in, char *out, char *key)
 {
+  crypt_des(in, out, key, false);
   printf("des: encryption: in(%s) out(%s), key(%s)\n", in, out, key);
 
   return;
@@ -591,8 +592,8 @@ encryption (char *in, char *out, char *key)
 void
 decryption (char *in, char *out, char *key)
 {
+  crypt_des(in, out, key, true);
   printf("des: decryption: in(%s) out(%s), key(%s)\n", in, out, key);
-
   return;
 }
 
