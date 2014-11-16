@@ -14,6 +14,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
+
 #define IP_SIZE 64
 static const int IP[IP_SIZE] = {
   58, 50, 42, 34, 26, 18, 10,  2,
@@ -113,7 +115,7 @@ static const int P[P_SIZE] =
   32, 27,  3,  9,
   19, 13, 30,  6,
   22, 11,  4, 25
-}; 
+};
 
 #define PC_1_SIZE 56
 static const int PC_1[PC_1_SIZE] =
@@ -484,6 +486,54 @@ writefile_helper (char *filename, long long data[], int num_blocks)
 
   fwrite(data, sizeof(long long), num_blocks, fp);
   fclose(fp);
+}
+
+int
+readfile_helper (long long **dst, char *filename)
+{
+  FILE *fp;
+  long long *buffer;
+  unsigned long file_size;
+  unsigned long original_file_size;
+  int blocks;
+
+  fp = fopen(filename, "rb");
+  if (fp == NULL)
+  {
+    fprintf(stderr, "Filepointer failed for %s\n", filename);
+    fclose(fp);
+    exit(EXIT_FAILURE);
+  }
+
+  fseek(fp, 0, SEEK_END);
+  original_file_size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  blocks = (int) CEIL(original_file_size, sizeof (long long));
+  file_size = blocks * sizeof(long long);
+  buffer = malloc(file_size);
+
+  if ( ! buffer)
+  {
+    fprintf(stderr, "dst malloc failed");
+    exit(EXIT_FAILURE);
+  }
+
+  // Set to null for padding reasons
+  if (original_file_size % 8 > 0)
+  {
+    for (int i = 0; i < blocks; i++)
+    {
+      buffer[i] = 0;
+    }
+  }
+
+  fread(buffer, file_size, 1, fp);
+  fclose(fp);
+
+  *dst =  buffer;
+
+  return blocks;
 }
 void
 encryption (char *in, char *out, char *key)
