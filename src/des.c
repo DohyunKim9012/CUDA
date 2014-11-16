@@ -535,6 +535,51 @@ readfile_helper (long long **dst, char *filename)
 
   return blocks;
 }
+
+void
+reverse_keys(long long* keys)
+{
+    long long keys_tmp[16];
+    memcpy(keys_tmp, keys, 16 * sizeof(long long));
+    for (int i = 0; i < 16; i++)
+    {
+      keys[15-i] = keys_tmp[i];
+    }
+}
+
+void
+crypt_des (char *in, char *out, char *key, bool reverse_key)
+{
+  int NUM_BLOCKS;
+  long long *input_data;
+  long long *key_data;
+  long long keys[16];
+
+  readfile_helper(&key_data, key);
+  keySchedule(keys, *key_data);
+
+  NUM_BLOCKS = readfile_helper(&input_data, in);
+  long long output_data[NUM_BLOCKS];
+
+  if (reverse_key)
+  {
+    reverse_keys(keys);
+  }
+
+  // Do DES
+  for (int i = 0; i < NUM_BLOCKS; i++)
+  {
+    output_data[i] = DES(i, input_data, keys);
+  }
+
+  writefile_helper(out, output_data, NUM_BLOCKS);
+
+  free(input_data);
+  free(key_data);
+
+  return;
+}
+
 void
 encryption (char *in, char *out, char *key)
 {
