@@ -468,6 +468,23 @@ keySchedule (long long int* keys, long long int key)
   }
 }
 
+// IO helpers for encryption/decryption
+void
+writefile_helper (char *filename, long long data[], int num_blocks)
+{
+  FILE *fp;
+
+  fp = fopen(filename, "wb");
+  if (fp == NULL)
+  {
+    fprintf(stderr, "Filepointer failed for %s", filename);
+    fclose(fp);
+    exit(EXIT_FAILURE);
+  }
+
+  fwrite(data, sizeof(long long), num_blocks, fp);
+  fclose(fp);
+}
 void
 encryption (char *in, char *out, char *key)
 {
