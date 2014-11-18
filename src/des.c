@@ -537,8 +537,9 @@ void
 reverse_keys(long long* keys)
 {
     long long keys_tmp[16];
+    int i;
     memcpy(keys_tmp, keys, 16 * sizeof(long long));
-    for (int i = 0; i < 16; i++)
+    for (i = 0; i < 16; i++)
     {
       keys[15-i] = keys_tmp[i];
     }
@@ -551,6 +552,7 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
   long long *input_data;
   long long *key_data;
   long long keys[16];
+  int i;
 
   readfile_helper(&key_data, key);
   keySchedule(keys, *key_data);
@@ -564,7 +566,7 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
   }
 
   // Do DES
-  for (int i = 0; i < NUM_BLOCKS; i++)
+  for (i = 0; i < NUM_BLOCKS; i++)
   {
     output_data[i] = DES(i, input_data, keys);
   }
