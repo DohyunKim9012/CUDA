@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
 
@@ -268,18 +269,18 @@ main (int argc, char *argv[])
     }
   }
 
-  if (inFile == NULL || outFile == NULL)
+  if (inFile == NULL || outFile == NULL || keyFile == NULL)
   {
 #ifdef TEST
     if (mode != TESTING)
     {
       fprintf(stderr, "des: must specify input file and output file\n");
-      fprintf(stderr, "Usage: (encrypt | decrypt | test) -i <input_file> -o <output file> [-k <key file>]\n");
+      fprintf(stderr, "Usage: (encrypt | decrypt | test) -i <input_file> -o <output file> -k <key file>\n");
       return -1;
     }
 #else
     fprintf(stderr, "des: must specify input file and output file\n");
-    fprintf(stderr, "Usage: (encrypt | decrypt) -i <input_file> -o <output file> [-k <key file>]\n");
+    fprintf(stderr, "Usage: (encrypt | decrypt) -i <input_file> -o <output file> -k <key file>\n");
 
     return -1;
 #endif // TEST
@@ -553,6 +554,16 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
   long long *key_data;
   long long keys[16];
   int i;
+  clock_t clockStart = clock();
+
+  if(reverse_key)
+  {
+  	printf("t=%.2f\tDecryption started\n", 0.0);
+  }
+  else
+  {
+  	printf("t=%.2f\tEncryption started\n", 0.0);
+  }
 
   readfile_helper(&key_data, key);
   keySchedule(keys, *key_data);
@@ -565,13 +576,20 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
     reverse_keys(keys);
   }
 
+  printf("t=%.2f\tReading input/key file to buffer done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
+  
+
   // Do DES
   for (i = 0; i < NUM_BLOCKS; i++)
   {
     output_data[i] = DES(i, input_data, keys);
   }
 
+  printf("t=%.2f\tEncryption/Decryption of %d blocks done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC, NUM_BLOCKS);
+
   writefile_helper(out, output_data, NUM_BLOCKS);
+
+  printf("t=%.2f\tWriting to output file done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
 
   free(input_data);
   free(key_data);
