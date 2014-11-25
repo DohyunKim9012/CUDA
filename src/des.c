@@ -558,11 +558,11 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
 
   if(reverse_key)
   {
-  	printf("t=%.2f\tDecryption started\n", 0.0);
+  	printf("t=%.4f\tDecryption started\n", 0.0);
   }
   else
   {
-  	printf("t=%.2f\tEncryption started\n", 0.0);
+  	printf("t=%.4f\tEncryption started\n", 0.0);
   }
 
   readfile_helper(&key_data, key);
@@ -576,20 +576,19 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
     reverse_keys(keys);
   }
 
-  printf("t=%.2f\tReading input/key file to buffer done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
+  printf("t=%.4f\tReading input/key file to buffer done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
   
-
   // Do DES
   for (i = 0; i < NUM_BLOCKS; i++)
   {
     output_data[i] = DES(i, input_data, keys);
   }
 
-  printf("t=%.2f\tEncryption/Decryption of %d blocks done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC, NUM_BLOCKS);
+  printf("t=%.4f\tEncryption/Decryption of %d blocks done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC, NUM_BLOCKS);
 
   writefile_helper(out, output_data, NUM_BLOCKS);
 
-  printf("t=%.2f\tWriting to output file done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
+  printf("t=%.4f\tWriting to output file done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
 
   free(input_data);
   free(key_data);
