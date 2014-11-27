@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/time.h>
 #include <unistd.h>
-#include <time.h>
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
 
@@ -198,7 +198,15 @@ static const long long unsigned check_keys[16] =
   0xBF918D3D3F0A0000,
   0xCB3D8B0E17F50000
 };
+/*
 
+static const long long unsigned check_keys[16] =
+{
+  0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0
+};*/
 bool
 test(void);
 #endif // TEST
@@ -269,18 +277,18 @@ main (int argc, char *argv[])
     }
   }
 
-  if (inFile == NULL || outFile == NULL || keyFile == NULL)
+  if (inFile == NULL || outFile == NULL)
   {
 #ifdef TEST
     if (mode != TESTING)
     {
       fprintf(stderr, "des: must specify input file and output file\n");
-      fprintf(stderr, "Usage: (encrypt | decrypt | test) -i <input_file> -o <output file> -k <key file>\n");
+      fprintf(stderr, "Usage: (encrypt | decrypt | test) -i <input_file> -o <output file> [-k <key file>]\n");
       return -1;
     }
 #else
     fprintf(stderr, "des: must specify input file and output file\n");
-    fprintf(stderr, "Usage: (encrypt | decrypt) -i <input_file> -o <output file> -k <key file>\n");
+    fprintf(stderr, "Usage: (encrypt | decrypt) -i <input_file> -o <output file> [-k <key file>]\n");
 
     return -1;
 #endif // TEST
@@ -345,6 +353,7 @@ DES (int index, long long int *MD, long long int *keys)
 
     // L(k+1) = R(k)
     L = R;
+
     // R(k+1) = L(k) ^ f(R(k), K(k+1))
     R = t ^ F(R, keys[k]);
   }
@@ -389,7 +398,7 @@ F (unsigned int c, long long int key)
   int i, j, k;                  // temporary variables
 
   // copy c to c64 (32 bit to 64 bit)
-  memcpy (&c64, &c, 4);
+  *((int*)&c64) = c;
   c64 <<= 32;
 
   // expand E
@@ -410,7 +419,7 @@ F (unsigned int c, long long int key)
 
     // get coloum number
     t = (midMask & e) >> 59;
-    memcpy(&j, &t, 4);
+    j = *((int*)&t);
 
     // merge S
     s |= (S[k][i][j]) << (4 * (S_SIZE - k - 1));
@@ -554,42 +563,38 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
   long long *key_data;
   long long keys[16];
   int i;
-  clock_t clockStart = clock();
 
-  if(reverse_key)
-  {
-  	printf("t=%.4f\tDecryption started\n", 0.0);
-  }
-  else
-  {
-  	printf("t=%.4f\tEncryption started\n", 0.0);
-  }
+  struct timeval tstart, tend;
 
   readfile_helper(&key_data, key);
+
+  gettimeofday(&tstart, NULL);
+
   keySchedule(keys, *key_data);
 
   NUM_BLOCKS = readfile_helper(&input_data, in);
-  long long output_data[NUM_BLOCKS];
+  long long *output_data = (long long int*)malloc(NUM_BLOCKS*sizeof(long long int));
 
   if (reverse_key)
   {
     reverse_keys(keys);
   }
 
-  printf("t=%.4f\tReading input/key file to buffer done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
-  
   // Do DES
   for (i = 0; i < NUM_BLOCKS; i++)
   {
     output_data[i] = DES(i, input_data, keys);
   }
 
-  printf("t=%.4f\tEncryption/Decryption of %d blocks done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC, NUM_BLOCKS);
+  gettimeofday(&tend, NULL);
 
   writefile_helper(out, output_data, NUM_BLOCKS);
 
-  printf("t=%.4f\tWriting to output file done\n", (double)(clock() - clockStart) / CLOCKS_PER_SEC);
+  printf("Execution time: %.5f seconds\n",
+         ((double)tend.tv_sec + 1.0e-6*tend.tv_usec) -
+         ((double)tstart.tv_sec + 1.0e-6*tstart.tv_usec));
 
+  free(output_data);
   free(input_data);
   free(key_data);
 
@@ -599,17 +604,18 @@ crypt_des (char *in, char *out, char *key, bool reverse_key)
 void
 encryption (char *in, char *out, char *key)
 {
-  crypt_des(in, out, key, false);
   printf("des: encryption: in(%s) out(%s), key(%s)\n", in, out, key);
-
+  crypt_des(in, out, key, false);
+ 
   return;
 }
 
 void
 decryption (char *in, char *out, char *key)
 {
-  crypt_des(in, out, key, true);
   printf("des: decryption: in(%s) out(%s), key(%s)\n", in, out, key);
+  crypt_des(in, out, key, true);
+
   return;
 }
 

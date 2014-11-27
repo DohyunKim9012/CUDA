@@ -16,8 +16,6 @@
 #include <unistd.h>
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
-#define FLOOR(a, b) (((a) / (b)) - (((a) % (b)) > 0 ? 1 : 0))
-
 // ---------- HOST --------------
 #define IP_SIZE 64
 static const int hostIP[IP_SIZE] = {
@@ -548,20 +546,9 @@ keySchedule (long long unsigned* keys, long long unsigned key)
 
 // IO helpers for encryption/decryption
 void
-writefile_helper (char *filename, long long data[], int num_blocks)
+writefile_helper (FILE *fp, long long data[], int num_blocks)
 {
-  FILE *fp;
-
-  fp = fopen(filename, "wb");
-  if (fp == NULL)
-  {
-    fprintf(stderr, "Filepointer failed for %s", filename);
-    fclose(fp);
-    exit(EXIT_FAILURE);
-  }
-
   fwrite(data, sizeof(long long), num_blocks, fp);
-  fclose(fp);
 }
 
 int
@@ -575,21 +562,20 @@ readfile_helper (long long unsigned **dst, FILE *fp, unsigned long read_size)
   currentPos = ftell(fp);
   fseek(fp, 0, SEEK_END);
   end = ftell(fp);
-  fseek(currentPos);
-  delta = end - currentPos
+  delta = end - currentPos;
+  fseek(fp, -delta, SEEK_CUR);
 
   if (read_size >= delta)
   {
-    // whole file can be read in once
+    // whole file or rest of it can be read in once
     blocks = (int) CEIL(delta, sizeof (long long unsigned));
   }
   else 
   {
     // file needs to read multiple times
-    blocks = (int) FLOOR(delta, sizeof (long long unsigned));
+    blocks = (int) read_size/sizeof(long long unsigned);
   }
 
-  
   file_read_size = blocks * sizeof(long long unsigned);
   buffer = (long long unsigned*)malloc(file_read_size);
 
@@ -608,8 +594,7 @@ readfile_helper (long long unsigned **dst, FILE *fp, unsigned long read_size)
         fprintf(stderr, "this should not happen!");
       }
   }
-
-  fread(buffer, file_read_size, 1, fp);
+  fread(buffer, sizeof(long long unsigned), blocks, fp);
   *dst =  buffer;
 
   return blocks;
@@ -643,15 +628,17 @@ void
 crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int devThreads)
 {
   int NUM_BLOCKS;
-  FILE *fp_in, *fp_out;
+  FILE *fp_in, *fp_out, *fp_key;
   long long unsigned *input_data;
   long long unsigned *key_data;
   long long unsigned keys[16];
-
+  long readWriteDataSize;
   struct timeval tstart, tend;
   struct timeval tmemstart, tmemend;
 
-  readfile_helper(&key_data, key);
+  fp_key = fopen(key, "rb");
+  readfile_helper(&key_data, fp_key, 64);
+  fclose(fp_key);
 
   gettimeofday(&tstart, NULL);
 
@@ -669,23 +656,12 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
   {
     struct cudaDeviceProp prop;
 
-    cudaGetDeviceProperties(&prop, 0);
+    cudaGetDeviceProperties(&prop, 64);
 
     size_t totalGlobalMem = prop.totalGlobalMem;
-    int maxThreadsPerBlock = prop.maxThreadsPerBlock;
-
-    *fp_in = fopen(in, "rb");
-    if (fp_in == NULL)
-    {
-      fprintf(stderr, "Filepointer failed for %s\n", filename);
-      fclose(fp_in);
-      exit(EXIT_FAILURE);
-    }
-    
-    NUM_BLOCKS = readfile_helper(&input_data, fp_in, totalGlobalMem*0.8);  
-    long long int *output_data = (long long int*)malloc(NUM_BLOCKS*sizeof(long long int));
-    fclose(fp_in)
-
+    readWriteDataSize = totalGlobalMem*0.8;
+    //int maxThreadsPerBlock = prop.maxThreadsPerBlock;
+  
     gettimeofday(&tmemstart, NULL);
 
     // copy constants to device
@@ -698,48 +674,71 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
 
     gettimeofday(&tmemend, NULL);
 
-    printf("Constant mem time: %.5f seconds\n",
-         ((double)tmemend.tv_sec + 1.0e-6*tmemend.tv_usec) -
-         ((double)tmemstart.tv_sec + 1.0e-6*tmemstart.tv_usec));
+    fp_in = fopen(in, "rb");
+    fp_out = fopen(out, "wb");
+    if (fp_in == NULL || fp_out == NULL)
+    {
+      fprintf(stderr, "Filepointer failed for %s or %s\n", in, out);
+      fclose(fp_in);
+      fclose(fp_out);
+      exit(EXIT_FAILURE);
+    }
 
-    // Device data structure
-    long long unsigned *devData;       // data array
-    int *devNumBlocks;            // number of blocks in device
+    NUM_BLOCKS = readfile_helper(&input_data, fp_in, readWriteDataSize);  
+    
+    while(NUM_BLOCKS > 0)
+    {
+      printf("NUM_BLOCKS: %d\n",NUM_BLOCKS); 
+      long long int *output_data = (long long int*)malloc(NUM_BLOCKS*sizeof(long long int));
 
-    gettimeofday(&tmemstart, NULL);
-
-    cudaMalloc ((void**)&devData, sizeof(long long int)*NUM_BLOCKS);
-    cudaMalloc ((void**)&devNumBlocks, sizeof(int));
-
-    cudaMemcpy (devData, input_data, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyHostToDevice);
-    cudaMemcpy (devNumBlocks, &NUM_BLOCKS, sizeof(int), cudaMemcpyHostToDevice);
-
-    gettimeofday(&tmemend, NULL);
-
-    printf("Mem time: %.5f seconds\n",
+      printf("Constant mem time: %.5f seconds\n",
            ((double)tmemend.tv_sec + 1.0e-6*tmemend.tv_usec) -
            ((double)tmemstart.tv_sec + 1.0e-6*tmemstart.tv_usec));
-    printf("Blocks(%d)*Threads(%d)=%d --- Datablocks(%d)\n", devBlocks, devThreads, 
-          devBlocks*devThreads, NUM_BLOCKS);
-    crypt_kernel<<<devBlocks, devThreads>>>(devNumBlocks, devData);
 
-    cudaMemcpy (output_data, devData, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyDeviceToHost);
+      // Device data structure
+      long long unsigned *devData;       // data array
+      int *devNumBlocks;            // number of blocks in device
 
-    cudaFree (devData);
-    cudaFree (devNumBlocks);
+      gettimeofday(&tmemstart, NULL);
+
+      cudaMalloc ((void**)&devData, sizeof(long long int)*NUM_BLOCKS);
+      cudaMalloc ((void**)&devNumBlocks, sizeof(int));
+
+      cudaMemcpy (devData, input_data, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyHostToDevice);
+      cudaMemcpy (devNumBlocks, &NUM_BLOCKS, sizeof(int), cudaMemcpyHostToDevice);
+
+      gettimeofday(&tmemend, NULL);
+
+      printf("Mem time: %.5f seconds\n",
+             ((double)tmemend.tv_sec + 1.0e-6*tmemend.tv_usec) -
+             ((double)tmemstart.tv_sec + 1.0e-6*tmemstart.tv_usec));
+      printf("Blocks(%d)*Threads(%d)=%d --- Datablocks(%d)\n", devBlocks, devThreads, 
+            devBlocks*devThreads, NUM_BLOCKS);
+      crypt_kernel<<<devBlocks, devThreads>>>(devNumBlocks, devData);
+
+      cudaMemcpy (output_data, devData, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyDeviceToHost);
+
+      cudaFree (devData);
+      cudaFree (devNumBlocks);
+
+      writefile_helper(fp_out, output_data, NUM_BLOCKS);
+
+      gettimeofday(&tend, NULL);
+
+      free(output_data);
+      free(input_data);
+    
+      NUM_BLOCKS = readfile_helper(&input_data, fp_in, readWriteDataSize);
+    }
+    
+    fclose(fp_in);
+    fclose(fp_out);
+    free(key_data);
   }
-
-  gettimeofday(&tend, NULL);
-
-  writefile_helper(out, output_data, NUM_BLOCKS);
 
   printf("Execution time: %.5f seconds\n",
          ((double)tend.tv_sec + 1.0e-6*tend.tv_usec) -
          ((double)tstart.tv_sec + 1.0e-6*tstart.tv_usec));
-
-  free(output_data);
-  free(input_data);
-  free(key_data);
 
   return;
 }
