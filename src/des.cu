@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
+#define FLOOR(a, b) (((a) / (b)) - (((a) % (b)) > 0 ? 1 : 0))
 
 // ---------- HOST --------------
 #define IP_SIZE 64
@@ -564,45 +565,51 @@ writefile_helper (char *filename, long long data[], int num_blocks)
 }
 
 int
-readfile_helper (long long unsigned **dst, char *filename)
+readfile_helper (long long unsigned **dst, FILE *fp, unsigned long read_size)
 {
-  FILE *fp;
   long long unsigned *buffer;
-  unsigned long file_size;
-  unsigned long original_file_size;
+  unsigned long file_read_size;
+  unsigned long end, currentPos, delta;
   int blocks;
 
-  fp = fopen(filename, "rb");
-  if (fp == NULL)
+  currentPos = ftell(fp);
+  fseek(fp, 0, SEEK_END);
+  end = ftell(fp);
+  fseek(currentPos);
+  delta = end - currentPos
+
+  if (read_size >= delta)
   {
-    fprintf(stderr, "Filepointer failed for %s\n", filename);
-    fclose(fp);
-    exit(EXIT_FAILURE);
+    // whole file can be read in once
+    blocks = (int) CEIL(delta, sizeof (long long unsigned));
+  }
+  else 
+  {
+    // file needs to read multiple times
+    blocks = (int) FLOOR(delta, sizeof (long long unsigned));
   }
 
-  fseek(fp, 0, SEEK_END);
-  original_file_size = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
+  
+  file_read_size = blocks * sizeof(long long unsigned);
+  buffer = (long long unsigned*)malloc(file_read_size);
 
-  blocks = (int) CEIL(original_file_size, sizeof (long long unsigned));
-  file_size = blocks * sizeof(long long unsigned);
-  buffer = (long long unsigned*)malloc(file_size);
-
-  if ( ! buffer)
+  if (!buffer)
   {
     fprintf(stderr, "dst malloc failed");
     exit(EXIT_FAILURE);
   }
 
   // Set to null for padding reasons
-  if (original_file_size % 8 > 0)
+  if (delta % 8 > 0)
   {
       buffer[blocks-1] = 0;
+      if (read_size < delta)
+      {
+        fprintf(stderr, "this should not happen!");
+      }
   }
 
-  fread(buffer, file_size, 1, fp);
-  fclose(fp);
-
+  fread(buffer, file_read_size, 1, fp);
   *dst =  buffer;
 
   return blocks;
@@ -636,6 +643,7 @@ void
 crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int devThreads)
 {
   int NUM_BLOCKS;
+  FILE *fp_in, *fp_out;
   long long unsigned *input_data;
   long long unsigned *key_data;
   long long unsigned keys[16];
@@ -648,10 +656,10 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
   gettimeofday(&tstart, NULL);
 
   keySchedule(keys, *key_data);
-
-  NUM_BLOCKS = readfile_helper(&input_data, in);
-
-  long long int *output_data = (long long int*)malloc(NUM_BLOCKS*sizeof(long long int));
+  if (reverse_key)
+  {
+    reverse_keys(keys);
+  }
 
   int deviceNum = 0;
   cudaGetDeviceCount(&deviceNum);
@@ -659,18 +667,24 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
   // using cuda
   if (deviceNum > 0) 
   {
-    /*
     struct cudaDeviceProp prop;
 
     cudaGetDeviceProperties(&prop, 0);
 
     size_t totalGlobalMem = prop.totalGlobalMem;
     int maxThreadsPerBlock = prop.maxThreadsPerBlock;
-*/
-    if (reverse_key)
+
+    *fp_in = fopen(in, "rb");
+    if (fp_in == NULL)
     {
-      reverse_keys(keys);
+      fprintf(stderr, "Filepointer failed for %s\n", filename);
+      fclose(fp_in);
+      exit(EXIT_FAILURE);
     }
+    
+    NUM_BLOCKS = readfile_helper(&input_data, fp_in, totalGlobalMem*0.8);  
+    long long int *output_data = (long long int*)malloc(NUM_BLOCKS*sizeof(long long int));
+    fclose(fp_in)
 
     gettimeofday(&tmemstart, NULL);
 
