@@ -12,8 +12,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
+
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
 // ---------- HOST --------------
@@ -633,14 +634,14 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
   long long unsigned *key_data;
   long long unsigned keys[16];
   long readWriteDataSize;
-  struct timeval tstart, tend;
-  struct timeval tmemstart, tmemend;
+  clock_t clkStart = clock();
+  clock_t tmpClock;
+  double memClks = 0;
+
 
   fp_key = fopen(key, "rb");
   readfile_helper(&key_data, fp_key, 64);
   fclose(fp_key);
-
-  gettimeofday(&tstart, NULL);
 
   keySchedule(keys, *key_data);
   if (reverse_key)
@@ -662,8 +663,7 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
     readWriteDataSize = totalGlobalMem*0.8;
     //int maxThreadsPerBlock = prop.maxThreadsPerBlock;
   
-    gettimeofday(&tmemstart, NULL);
-
+    tmpClock = clock();
     // copy constants to device
     cudaMemcpyToSymbol (devIP, hostIP, sizeof(int)*IP_SIZE);
     cudaMemcpyToSymbol (devIP_1, hostIP_1, sizeof(int)*IP_1_SIZE);
@@ -671,8 +671,7 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
     cudaMemcpyToSymbol (devS, hostS, sizeof(int)*S_SIZE*4*16);
     cudaMemcpyToSymbol (devP, hostP, sizeof(int)*P_SIZE);
     cudaMemcpyToSymbol (devKeys, keys, sizeof(long long unsigned)*16);
-
-    gettimeofday(&tmemend, NULL);
+    memClks += (double) (clock() - tmpClock);
 
     fp_in = fopen(in, "rb");
     fp_out = fopen(out, "wb");
@@ -691,39 +690,29 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
       printf("NUM_BLOCKS: %d\n",NUM_BLOCKS); 
       long long int *output_data = (long long int*)malloc(NUM_BLOCKS*sizeof(long long int));
 
-      printf("Constant mem time: %.5f seconds\n",
-           ((double)tmemend.tv_sec + 1.0e-6*tmemend.tv_usec) -
-           ((double)tmemstart.tv_sec + 1.0e-6*tmemstart.tv_usec));
-
       // Device data structure
       long long unsigned *devData;       // data array
       int *devNumBlocks;            // number of blocks in device
 
-      gettimeofday(&tmemstart, NULL);
-
+      tmpClock = clock();
       cudaMalloc ((void**)&devData, sizeof(long long int)*NUM_BLOCKS);
       cudaMalloc ((void**)&devNumBlocks, sizeof(int));
 
       cudaMemcpy (devData, input_data, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyHostToDevice);
       cudaMemcpy (devNumBlocks, &NUM_BLOCKS, sizeof(int), cudaMemcpyHostToDevice);
+      memClks += (double) (clock() - tmpClock);
 
-      gettimeofday(&tmemend, NULL);
-
-      printf("Mem time: %.5f seconds\n",
-             ((double)tmemend.tv_sec + 1.0e-6*tmemend.tv_usec) -
-             ((double)tmemstart.tv_sec + 1.0e-6*tmemstart.tv_usec));
       printf("Blocks(%d)*Threads(%d)=%d --- Datablocks(%d)\n", devBlocks, devThreads, 
             devBlocks*devThreads, NUM_BLOCKS);
       crypt_kernel<<<devBlocks, devThreads>>>(devNumBlocks, devData);
 
+      tmpClock = clock();
       cudaMemcpy (output_data, devData, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyDeviceToHost);
-
       cudaFree (devData);
       cudaFree (devNumBlocks);
+      memClks += (double) (clock() - tmpClock);
 
       writefile_helper(fp_out, output_data, NUM_BLOCKS);
-
-      gettimeofday(&tend, NULL);
 
       free(output_data);
       free(input_data);
@@ -736,9 +725,8 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
     free(key_data);
   }
 
-  printf("Execution time: %.5f seconds\n",
-         ((double)tend.tv_sec + 1.0e-6*tend.tv_usec) -
-         ((double)tstart.tv_sec + 1.0e-6*tstart.tv_usec));
+  printf("Execution time: %.5f s of which %.5f was used for memory operations\n", 
+        (double)(clock() - start) / CLOCKS_PER_SEC, (double)(memClks / CLOCKS_PER_SEC));
 
   return;
 }
