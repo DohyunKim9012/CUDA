@@ -827,7 +827,7 @@ test (void)
   printf ("Testing [CUDA DES operation]\n");
   printf ("----------------------------\n");
 
-  crypt_kernel<<<1, 1>>>(devNumBlocks, devData);
+  crypt_kernel<<<1, 1>>>(devNumBlocks, 1, devData);
 
   cudaMemcpy (&test_C, devData, sizeof(long long int), cudaMemcpyDeviceToHost);
 
@@ -848,7 +848,7 @@ test (void)
 
   cudaMemcpy (devData, &test_C, sizeof(long long int), cudaMemcpyHostToDevice);
 
-  crypt_kernel<<<1, 1>>>(devNumBlocks, devData);
+  crypt_kernel<<<1, 1>>>(devNumBlocks, 1, devData);
 
   cudaMemcpy (&test_M, devData, sizeof(long long int), cudaMemcpyDeviceToHost);
 
