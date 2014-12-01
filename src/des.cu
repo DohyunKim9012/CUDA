@@ -185,7 +185,7 @@ F (unsigned int c, long long unsigned key);
  * the kernel function for DES */
 __global__
 void
-crypt_kernel (int* numData, long long unsigned *data);
+crypt_kernel (int limit, int elements, long long unsigned *data)
 
 /* --------------------- HOST ----------------------------
  * compute key schedule k1 .. k16 */
@@ -581,7 +581,7 @@ readfile_helper (long long unsigned **dst, FILE *fp, unsigned long read_size)
     // whole file or rest of it can be read in once
     blocks = (int) CEIL(delta, sizeof (long long unsigned));
   }
-  else 
+  else
   {
     // file needs to read multiple times
     blocks = (int) read_size/sizeof(long long unsigned);
@@ -627,12 +627,18 @@ reverse_keys(long long unsigned* keys)
 
 __global__
 void
-crypt_kernel (int *numData, long long unsigned *data)
+crypt_kernel (int limit, int elements, long long unsigned *data)
 {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (index < *numData)
-    DES (&data[index]);
+  int limit2 = (blockIdx.x * blockDim.x + threadIdx.x) * elements + elements;
+  for (int index = (blockIdx.x * blockDim.x + threadIdx.x) * elements;
+       index < limit2;
+       index++)
+  {
+    if (index < limit)
+    {
+      DES (&data[index]);
+    }
+  }
 }
 
 void
