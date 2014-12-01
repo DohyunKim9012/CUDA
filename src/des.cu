@@ -17,6 +17,7 @@
 
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
+#define MAX_THREADS 512
 // ---------- HOST --------------
 #define IP_SIZE 64
 static const int hostIP[IP_SIZE] = {
@@ -196,14 +197,14 @@ keySchedule (long long unsigned* keys, long long unsigned key);
  * performs encryption with key, and writes to the out file
  * as the output. */
 void
-encryption (char *in, char *out, char *key, int devBlocks, int devThreads);
+encryption (char *in, char *out, char *key, int devThreads);
 
 /* --------------------- HOST ---------------------------
  * this decryption function has the in file as an input,
  * performs decryption with key, and writes to the out file
  * as the output. */
 void
-decryption (char *in, char *out, char *key, int devBlocks, int devThreads);
+decryption (char *in, char *out, char *key, int devThreads);
 
 /* --------------------- HOST ---------------------------
  * helper function for encryption */
@@ -253,9 +254,9 @@ main (int argc, char *argv[])
   char *inFile = NULL, *outFile = NULL, *keyFile = NULL;
   char opt = -1;
   int index, mode = UNSPECIFIED;
-  int blockNum = -1, threadNum = -1;
+  int threadNum = -1;
 
-  while ((opt = getopt (argc, argv, "i:o:k:b:t:")) > 0)
+  while ((opt = getopt (argc, argv, "i:o:k:t:")) > 0)
   {
     switch (opt)
     {
@@ -267,9 +268,6 @@ main (int argc, char *argv[])
         break;
       case 'k':
         keyFile = optarg;
-        break;
-      case 'b':
-        blockNum = atoi(optarg);
         break;
       case 't':
         threadNum = atoi(optarg);
@@ -311,8 +309,7 @@ main (int argc, char *argv[])
     }
   }
 
-  if (inFile == NULL || outFile == NULL ||
-      blockNum < 0   || threadNum < 0 )
+  if (inFile == NULL || outFile == NULL || threadNum < 0 || threadNum > MAX_THREADS )
   {
  #ifdef TEST
     if (mode != TESTING)
@@ -360,10 +357,10 @@ main (int argc, char *argv[])
   switch (mode)
   {
     case ENCRYPT:
-      encryption (inFile, outFile, keyFile, blockNum, threadNum);
+      encryption (inFile, outFile, keyFile, threadNum);
       break;
     case DECRYPT:
-      decryption (inFile, outFile, keyFile, blockNum, threadNum);
+      decryption (inFile, outFile, keyFile, threadNum);
       break;
  #ifdef TEST
     case TESTING:
@@ -626,7 +623,7 @@ crypt_kernel (int *numData, long long unsigned *data)
 }
 
 void
-crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int devThreads)
+crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
 {
   int NUM_BLOCKS;
   FILE *fp_in, *fp_out, *fp_key;
@@ -732,19 +729,19 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devBlocks, int 
 }
 
 void
-encryption (char *in, char *out, char *key, int devBlocks, int devThreads)
+encryption (char *in, char *out, char *key, int devThreads)
 {
   printf("des: encryption: in(%s) out(%s), key(%s)\n", in, out, key);
-  crypt_des(in, out, key, false, devBlocks, devThreads);
+  crypt_des(in, out, key, false, devThreads);
 
   return;
 }
 
 void
-decryption (char *in, char *out, char *key, int devBlocks, int devThreads)
+decryption (char *in, char *out, char *key, int devThreads)
 {
   printf("des: decryption: in(%s) out(%s), key(%s)\n", in, out, key);
-  crypt_des(in, out, key, true, devBlocks, devThreads);
+  crypt_des(in, out, key, true, devThreads);
 
   return;
 }
