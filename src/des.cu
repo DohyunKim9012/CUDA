@@ -653,7 +653,20 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
   clock_t clkStart = clock();
   clock_t tmpClock;
   double memClks = 0;
+  struct timeval tstart, tend;
+  struct timeval tmemstart, tmemend;
+  struct cudaDeviceProp prop;
 
+  int deviceNum = 0;
+  cudaGetDeviceCount(&deviceNum);
+
+  // using cuda
+  if (deviceNum == 0)
+  {
+    printf("No CUDA device \n");
+    return;
+  }
+  gettimeofday(&tstart, NULL);
 
   fp_key = fopen(key, "rb");
   readfile_helper(&key_data, fp_key, 64);
@@ -665,15 +678,8 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
     reverse_keys(keys);
   }
 
-  int deviceNum = 0;
-  cudaGetDeviceCount(&deviceNum);
+  cudaGetDeviceProperties(&prop, 64);
 
-  // using cuda
-  if (deviceNum > 0) 
-  {
-    struct cudaDeviceProp prop;
-
-    cudaGetDeviceProperties(&prop, 64);
 
     size_t totalGlobalMem = prop.totalGlobalMem;
     readWriteDataSize = totalGlobalMem*0.8;
@@ -734,7 +740,6 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
       free(input_data);
     
       NUM_BLOCKS = readfile_helper(&input_data, fp_in, readWriteDataSize);
-    }
     
     fclose(fp_in);
     fclose(fp_out);
