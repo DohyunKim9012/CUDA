@@ -17,7 +17,7 @@
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
 #define MAX_THREADS 512
-#define MAX_BLOCKS = 65535
+#define MAX_BLOCKS 65535
 // ---------- HOST --------------
 #define IP_SIZE 64
 static const int hostIP[IP_SIZE] = {
@@ -722,11 +722,11 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
 
     cudaMalloc ((void**)&devData, sizeof(long long int)*NUM_BLOCKS);
 
-    if(CEIL(NUM_BLOCKS, devThreads) > 65535)
+    if(CEIL(NUM_BLOCKS, devThreads) > MAX_BLOCKS)
     {
       // We need to increase block size
       printf("MAX BLOCK SIZE REACHED!!!\n");
-      block_size = CEIL(CEIL(NUM_BLOCKS, devThreads), 65535);
+      block_size = CEIL(CEIL(NUM_BLOCKS, devThreads), MAX_BLOCKS);
       devNumBlocks = CEIL(NUM_BLOCKS, block_size*devThreads);
       printf("Block size: %d devNumBlocks %d total bytes = %d \n", block_size, devNumBlocks, block_size*devNumBlocks*devThreads);
     }
