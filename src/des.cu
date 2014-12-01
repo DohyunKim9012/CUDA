@@ -728,10 +728,11 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
       printf("MAX BLOCK SIZE REACHED!!!\n");
       block_size = CEIL(CEIL(NUM_BLOCKS, devThreads), MAX_BLOCKS);
       devNumBlocks = CEIL(NUM_BLOCKS, block_size*devThreads);
-      printf("Block size: %d devNumBlocks %d total bytes = %d \n", block_size, devNumBlocks, block_size*devNumBlocks*devThreads);
+      printf("Block size: %d devNumBlocks %d total bytes = %d \n",
+             block_size, devNumBlocks, block_size*devNumBlocks*devThreads);
     }
 
-    cudaMemcpy (devData, input_data, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyHostToDevice);
+    cudaMemcpy(devData, input_data, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyHostToDevice);
 
     gettimeofday(&tmemend, NULL);
 
@@ -746,8 +747,8 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
 
     crypt_kernel<<<devNumBlocks, devThreads>>>(NUM_BLOCKS, block_size, devData);
 
-    cudaMemcpy (output_data, devData, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyDeviceToHost);
-    cudaFree (devData);
+    cudaMemcpy(output_data, devData, sizeof(long long int)*NUM_BLOCKS, cudaMemcpyDeviceToHost);
+    cudaFree(devData);
 
     writefile_helper(fp_out, output_data, NUM_BLOCKS);
     gettimeofday(&tend, NULL);
