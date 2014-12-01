@@ -309,6 +309,12 @@ main (int argc, char *argv[])
     }
   }
 
+  if (! (threadNum && !(threadNum & (threadNum - 1))))
+  {
+    fprintf(stderr, "des: threads must be power of 2\n");
+    return -1;
+  }
+
   if (inFile == NULL || outFile == NULL || threadNum < 0 || threadNum > MAX_THREADS )
   {
  #ifdef TEST
@@ -319,8 +325,15 @@ main (int argc, char *argv[])
       return -1;
     }
 #else
-    fprintf(stderr, "des: must specify input file and output file\n");
-    fprintf(stderr, "Usage: (encrypt | decrypt) -i <input_file> -o <output file> -k <key file> -b <number of blocks> -t <number of threads>\n");
+    if (threadNum > MAX_THREADS)
+    {
+      fprintf(stderr, "des: Maximum thread size is 512\n");
+    }
+    else
+    {
+      fprintf(stderr, "des: must specify input file and output file\n");
+      fprintf(stderr, "Usage: (encrypt | decrypt) -i <input_file> -o <output file> -k <key file> -b <number of blocks> -t <number of threads>\n");
+    }
 
     return -1;
 #endif // TEST
