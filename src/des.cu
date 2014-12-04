@@ -716,7 +716,7 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
     // Device data structure
     long long unsigned *devData;       // data array
     // Our problem is 1D
-    int devNumBlocks = NUM_BLOCKS / devThreads;
+    int devNumBlocks = CEIL(NUM_BLOCKS, devThreads);
     int block_size = 1;
 
 
