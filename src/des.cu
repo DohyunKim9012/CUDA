@@ -756,15 +756,15 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
     free(input_data);
 
     NUM_BLOCKS = readfile_helper(&input_data, fp_in, readWriteDataSize);
-
-    fclose(fp_in);
-    fclose(fp_out);
-    free(key_data);
-
-    printf("Execution time: %.5f seconds\n",
-         ((double)tend.tv_sec + 1.0e-6*tend.tv_usec) -
-         ((double)tstart.tv_sec + 1.0e-6*tstart.tv_usec));
   }
+
+  fclose(fp_in);
+  fclose(fp_out);
+  free(key_data);
+
+  printf("Execution time: %.5f seconds\n",
+       ((double)tend.tv_sec + 1.0e-6*tend.tv_usec) -
+       ((double)tstart.tv_sec + 1.0e-6*tstart.tv_usec));
 
 
   return;
