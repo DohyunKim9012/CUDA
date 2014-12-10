@@ -1,0 +1,25 @@
+---------------------------------------
+            Device Status
+---------------------------------------
+Device 0: GeForce GTX 580
+++++++++++++++++++++++++++++++++++++
+totalGlobalMem     : 1610153984 b
+sharedMemPerBlock  : 49152 b
+regsPerBlock       : 32768 
+maxThreadsPerBlock : 1024 
+totalConstMem      : 65536 b 
+maxGridSize[1:3]   : 65535 65535 65535
+multiProcessorCount: 16
+------------------------------------
+des: encryption: in(data/1G) out(output/cuda/1G_RUN_0), key(keyfolder/key)
+Constant mem time: 0.02365 seconds
+File is split .. reading 131072000 blocks
+NUM_BLOCKS: 131072000
+MAX BLOCK SIZE REACHED!!!
+Block size: 4 devNumBlocks 64000 total bytes = 131072000 
+Mem time: 0.18016 seconds
+Blocks 64000, Threads per block 512 = 32768000
+NUM_BLOCKS: 3145728
+Mem time: 10.92283 seconds
+Blocks 6144, Threads per block 512 = 3145728
+Execution time: 11.34201 seconds

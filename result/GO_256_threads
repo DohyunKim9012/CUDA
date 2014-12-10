@@ -1,0 +1,113 @@
+-----------------------
+CUDA Results
+-----------------------
+file	exec_time	cuda_threads	cuda_blocks	hint
+128K_RUN_0 	 0.16503 256 	 64, 	 	
+128M_RUN_0 	 1.25376 256 	 32768, 	 Block size: 2 devNumBlocks 32768 total bytes = 16777216 	
+16G_RUN_0 	 2876836150.91120 	 	 	
+16K_RUN_0 	 0.01915 256 	 8, 	 	
+16M_RUN_0 	 0.08012 256 	 8192, 	 	
+1G_RUN_0 	 5.87113 256 256 	 12288, 	 Block size: 8 devNumBlocks 64000 total bytes = 131072000 	
+1K_RUN_0 	 0.01449 256 	 1, 	 	
+1M_RUN_0 	 0.02689 256 	 512, 	 	
+256K_RUN_0 	 0.02456 256 	 128, 	 	
+256M_RUN_0 	 1.79888 256 	 43691, 	 Block size: 3 devNumBlocks 43691 total bytes = 33554688 	
+2G_RUN_0 	 51.45494 256 256 256 	 24574, 	 Block size: 8 devNumBlocks 64000 total bytes = 131072000 Block size: 8 devNumBlocks 64000 total bytes = 131072000 	
+2K_RUN_0 	 0.02568 256 	 1, 	 	
+2M_RUN_0 	 0.82839 256 	 1024, 	 	
+32K_RUN_0 	 0.02141 256 	 16, 	 	
+32M_RUN_0 	 0.14972 256 	 16384, 	 	
+4G_RUN_0 	 46.81983 256 256 256 	 24574, 	 Block size: 8 devNumBlocks 64000 total bytes = 131072000 Block size: 8 devNumBlocks 64000 total bytes = 131072000 	
+4K_RUN_0 	 0.02599 256 	 2, 	 	
+4M_RUN_0 	 0.86559 256 	 2048, 	 	
+512K_RUN_0 	 0.02330 256 	 256, 	 	
+512M_RUN_0 	 1.99721 256 	 52429, 	 Block size: 5 devNumBlocks 52429 total bytes = 67109120 	
+64K_RUN_0 	 0.02213 256 	 32, 	 	
+64M_RUN_0 	 0.27176 256 	 32768, 	 	
+8G_RUN_0 	 2876835990.24596 	 	 	
+8K_RUN_0 	 0.01469 256 	 4, 	 	
+8M_RUN_0 	 0.05196 256 	 4096, 	 	
+-----------------------
+CPU Results
+-----------------------
+128K_RUN_0 	 0.10690
+128M_RUN_0 	 108.41648
+16G_RUN_0 	 0.00002
+16K_RUN_0 	 0.11027
+16M_RUN_0 	 12.70007
+1G_RUN_0 	 805.98774
+1K_RUN_0 	 0.09929
+1M_RUN_0 	 0.80637
+256K_RUN_0 	 0.31327
+256M_RUN_0 	 203.17599
+2G_RUN_0 	 1625.59082
+2K_RUN_0 	 0.01091
+2M_RUN_0 	 2.37251
+32K_RUN_0 	 0.03745
+32M_RUN_0 	 25.43463
+4G_RUN_0 	 1626.61608
+4K_RUN_0 	 0.00766
+4M_RUN_0 	 5.04038
+512K_RUN_0 	 0.40764
+512M_RUN_0 	 407.21411
+64K_RUN_0 	 0.17267
+64M_RUN_0 	 59.39838
+8G_RUN_0 	 0.00002
+8K_RUN_0 	 0.03006
+8M_RUN_0 	 6.34377
+-----------------------
+CUDA checksums
+-----------------------
+7123d710329ee3b8a258a601f351dfb1 output/cuda/128K_RUN_0
+1c24139d0ee95f48de70eb1dbfbfdda9 output/cuda/128M_RUN_0
+d41d8cd98f00b204e9800998ecf8427e output/cuda/16G_RUN_0
+bccbbbccefecfe06888c737582dc9677 output/cuda/16K_RUN_0
+0c275301f0782603e62f88e566e2c757 output/cuda/16M_RUN_0
+1214d03f03ef276e18f35c657ec99991 output/cuda/1G_RUN_0
+7694b2e904810c2ae3c2693d7fe05a56 output/cuda/1K_RUN_0
+09548c01d515a8a4a0f1316e19689dfb output/cuda/1M_RUN_0
+a94124f7fc8eea155ef62a3662c2a2e0 output/cuda/256K_RUN_0
+8f0e8f3523dcaa0bb09a72433e79936b output/cuda/256M_RUN_0
+b44b66919f6f9c4d1b03aee03680b086 output/cuda/2G_RUN_0
+e4c2c676972434739301f88a49946846 output/cuda/2K_RUN_0
+dc2cc45355eee4ff5354e7d4e761c009 output/cuda/2M_RUN_0
+d08e4c6e500454a4e7c6c6846bc1cc10 output/cuda/32K_RUN_0
+194edc4b8bb2d3ee2fff410c4753c817 output/cuda/32M_RUN_0
+c0b9f5f64ea38a0b6c06e16644468877 output/cuda/4G_RUN_0
+b01bd0b22450bab24501e35d5fd81cd9 output/cuda/4K_RUN_0
+0baccb5caa2b9c6c8dd55c3a87dcf534 output/cuda/4M_RUN_0
+d7ee607e5fda608d38481f908f995a76 output/cuda/512K_RUN_0
+e9847ffcf80ea974d606002833c96e95 output/cuda/512M_RUN_0
+20abbd0659cca3ffdd5ed1489c3cfc8e output/cuda/64K_RUN_0
+e924de22624723bf500e97fcfacb6729 output/cuda/64M_RUN_0
+d41d8cd98f00b204e9800998ecf8427e output/cuda/8G_RUN_0
+3900e7b12d824f366320e56079948576 output/cuda/8K_RUN_0
+573b6b55be731dece968aa1d0289b2e1 output/cuda/8M_RUN_0
+-----------------------
+CPU checksums
+-----------------------
+7123d710329ee3b8a258a601f351dfb1 output/std/128K_RUN_0
+1c24139d0ee95f48de70eb1dbfbfdda9 output/std/128M_RUN_0
+d41d8cd98f00b204e9800998ecf8427e output/std/16G_RUN_0
+bccbbbccefecfe06888c737582dc9677 output/std/16K_RUN_0
+0c275301f0782603e62f88e566e2c757 output/std/16M_RUN_0
+1214d03f03ef276e18f35c657ec99991 output/std/1G_RUN_0
+7694b2e904810c2ae3c2693d7fe05a56 output/std/1K_RUN_0
+09548c01d515a8a4a0f1316e19689dfb output/std/1M_RUN_0
+a94124f7fc8eea155ef62a3662c2a2e0 output/std/256K_RUN_0
+8f0e8f3523dcaa0bb09a72433e79936b output/std/256M_RUN_0
+b44b66919f6f9c4d1b03aee03680b086 output/std/2G_RUN_0
+e4c2c676972434739301f88a49946846 output/std/2K_RUN_0
+dc2cc45355eee4ff5354e7d4e761c009 output/std/2M_RUN_0
+d08e4c6e500454a4e7c6c6846bc1cc10 output/std/32K_RUN_0
+194edc4b8bb2d3ee2fff410c4753c817 output/std/32M_RUN_0
+c0b9f5f64ea38a0b6c06e16644468877 output/std/4G_RUN_0
+b01bd0b22450bab24501e35d5fd81cd9 output/std/4K_RUN_0
+0baccb5caa2b9c6c8dd55c3a87dcf534 output/std/4M_RUN_0
+d7ee607e5fda608d38481f908f995a76 output/std/512K_RUN_0
+e9847ffcf80ea974d606002833c96e95 output/std/512M_RUN_0
+20abbd0659cca3ffdd5ed1489c3cfc8e output/std/64K_RUN_0
+e924de22624723bf500e97fcfacb6729 output/std/64M_RUN_0
+d41d8cd98f00b204e9800998ecf8427e output/std/8G_RUN_0
+3900e7b12d824f366320e56079948576 output/std/8K_RUN_0
+573b6b55be731dece968aa1d0289b2e1 output/std/8M_RUN_0

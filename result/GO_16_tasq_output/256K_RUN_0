@@ -1,0 +1,19 @@
+---------------------------------------
+            Device Status
+---------------------------------------
+Device 0: GeForce GTX 580
+++++++++++++++++++++++++++++++++++++
+totalGlobalMem     : 1610153984 b
+sharedMemPerBlock  : 49152 b
+regsPerBlock       : 32768 
+maxThreadsPerBlock : 1024 
+totalConstMem      : 65536 b 
+maxGridSize[1:3]   : 65535 65535 65535
+multiProcessorCount: 16
+------------------------------------
+des: encryption: in(data/256K) out(output/cuda/256K_RUN_0), key(keyfolder/key)
+Constant mem time: 0.02186 seconds
+NUM_BLOCKS: 32768
+Mem time: 0.00013 seconds
+Blocks 2048, Threads per block 16 = 32768
+Execution time: 0.02402 seconds
