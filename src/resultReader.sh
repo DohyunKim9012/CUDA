@@ -25,14 +25,14 @@ for DATAFILE in $TASQ_OUTPUT_FOLDER/std/*; do
 done
 
 echo "-----------------------"
-echo "CUDA chechsums"
+echo "CUDA checksums"
 echo "-----------------------"
 for DATAFILE in $OUTPUT_FOLDER/cuda/*; do
     echo `md5sum $DATAFILE`
 done
 
 echo "-----------------------"
-echo "CPU chechsums"
+echo "CPU checksums"
 echo "-----------------------"
 for DATAFILE in $OUTPUT_FOLDER/std/*; do
     echo `md5sum $DATAFILE`

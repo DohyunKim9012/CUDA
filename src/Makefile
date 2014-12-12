@@ -10,7 +10,7 @@ main: des_c
 des_c:
 	$(CC) -o $(C_OBJ) $(C_SRC)
 
-des_c_cuda:
+cuda:
 	$(NVCC) -o $(CU_OBJ) $(CU_SRC)
 
 test:

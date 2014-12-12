@@ -6,7 +6,7 @@ DATA_FOLDER=data
 OUTPUT_FOLDER=output
 TASQ_OUTPUT_FOLDER=tasq_output
 RUNS=1
-MAX_FILE_SIZE=$((2*10**9))
+MAX_FILE_SIZE=$((2*10**10))
 
 threads_per_block=$2
 cuda_only=$1
@@ -42,6 +42,7 @@ if [ $cuda_only -eq 0 ]
 then
   # Create data
   file_size=$((2**10))
+  
   while [ $file_size -lt $MAX_FILE_SIZE ]; do
     echo $file_size
     if [ $file_size -lt $((2**20)) ]; then
@@ -74,20 +75,13 @@ for DATAFILE in ${DATA_FOLDER}/*; do
 		CUDA_TASQ_OUTPUT_FILENAME=$TASQ_OUTPUT_FOLDER/cuda/$(basename $DATAFILE)_RUN_$i
 		
     if [ $cuda_only -eq 0 ]; then
-      echo -e "\t" `tasq enq $STD_TASQ_OUTPUT_FILENAME \
-        $DES_EXEC_STD encrypt \
-        -i $DATAFILE \
-        -o $STD_OUTPUT_FILENAME \
-        -k $KEY_FILE`
+      $DES_EXEC_STD encrypt -i $DATAFILE -o $STD_OUTPUT_FILENAME \
+        -k $KEY_FILE > $STD_TASQ_OUTPUT_FILENAME
       sleep 2  
     fi
 
-    echo -e "\t" `tasq enq $CUDA_TASQ_OUTPUT_FILENAME \
-      $DES_EXEC_CUDA encrypt \
-      -i $DATAFILE \
-      -o $CUDA_OUTPUT_FILENAME \
-      -k $KEY_FILE \
-      -t $threads_per_block`
+    $DES_EXEC_CUDA encrypt -i $DATAFILE -o $CUDA_OUTPUT_FILENAME \
+      -k $KEY_FILE -t $threads_per_block > $CUDA_TASQ_OUTPUT_FILENAME
 
     sleep 2
 	done

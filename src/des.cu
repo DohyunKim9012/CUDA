@@ -185,7 +185,7 @@ F (unsigned int c, long long unsigned key);
  * the kernel function for DES */
 __global__
 void
-crypt_kernel (int limit, int elements, long long unsigned *data)
+crypt_kernel (int limit, int elements, long long unsigned *data);
 
 /* --------------------- HOST ----------------------------
  * compute key schedule k1 .. k16 */
@@ -585,6 +585,7 @@ readfile_helper (long long unsigned **dst, FILE *fp, unsigned long read_size)
   {
     // file needs to read multiple times
     blocks = (int) read_size/sizeof(long long unsigned);
+    printf("File is split .. reading %d blocks\n", blocks);
   }
 
   file_read_size = blocks * sizeof(long long unsigned);
@@ -678,8 +679,8 @@ crypt_des (char *in, char *out, char *key, bool reverse_key, int devThreads)
   cudaGetDeviceProperties(&prop, 64);
 
   size_t totalGlobalMem = prop.totalGlobalMem;
-  readWriteDataSize = totalGlobalMem*0.8;
-
+  readWriteDataSize = totalGlobalMem*0.1;
+  readWriteDataSize = 1048576000;
   gettimeofday(&tmemstart, NULL);
   // copy constants to device
   cudaMemcpyToSymbol (devIP, hostIP, sizeof(int)*IP_SIZE);
