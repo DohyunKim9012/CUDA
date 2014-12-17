@@ -8,9 +8,15 @@ import javax.crypto.SecretKey;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
+import javax.crypto.KeyAgreement;
+import javax.crypto.spec.DHParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.InvalidKeyException;
 import java.security.interfaces.RSAPrivateKey;
@@ -19,6 +25,7 @@ import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 
 import java.util.Scanner;
 import java.io.File;
@@ -30,13 +37,14 @@ public class DBClient {
   private DBClient() {}
 
   public enum Encryption {
-    AES, DES, TripleDES, RSA, DH }
+    UnEncrypted, AES, DES, TripleDES, RSA, DH }
 
   public static SecretKey AESKey = null;
   public static SecretKey DESKey = null;
   public static SecretKey TripleDESKey = null;
   public static RSAPublicKey RSAPubKey = null;
   public static RSAPrivateKey RSAPriKey = null;
+  public static KeyPair DHKeyPair = null;
 
   public static void main(String[] args)
   {
@@ -67,6 +75,16 @@ public class DBClient {
       Registry registry = LocateRegistry.getRegistry(host);
       DBRequest stub = (DBRequest) registry.lookup("DBRequest");
 
+      System.out.println("Connection Check");
+      stub.DBWrite (0, new byte[1024]);
+      stub.DBRead (0, 1024);
+      stub.DBGetPublic();
+
+      System.out.println("Start Unencrypted Write");
+      System.out.println("End Unencrypted Write @ " + doWrite (stub, trace, response + ".UnEncryptedWrite.out", Encryption.UnEncrypted) + " ms\n");
+      System.out.println("Start Unencrypted Read");
+      System.out.println("End Unencrypted Read @ "  + doRead (stub, trace, response + ".UnEncryptedRead.out", Encryption.UnEncrypted) + " ms\n");
+
       System.out.println("Start AES Write");
       System.out.println("End AES Write @ " + doWrite (stub, trace, response + ".AESWrite.out", Encryption.AES)  + " ms\n");
       System.out.println("Start AES Read");
@@ -87,6 +105,11 @@ public class DBClient {
       System.out.println("Start RSA Read");
       System.out.println("End RSA Read @ " + doRead (stub, trace, response + ".RSARead.out", Encryption.RSA) + " ms\n");
 
+      System.out.println("Start AES+DH Write");
+      System.out.println("End AES+DH Write @ " + doWrite (stub, trace, response + ".DHWrite.out", Encryption.DH) + "ms\n");
+
+      System.out.println("Start AES+DH Read");
+      System.out.println("End AES+DH Read @ " + doRead (stub, trace, response + ".DHRead.out", Encryption.DH) + " ms\n");
     }
     catch (Exception e)
     {
@@ -117,9 +140,17 @@ public class DBClient {
 
         long time = System.currentTimeMillis();
 
-        byte[] data = decrypt(e, stub.DBRead(key, length));
+        byte[] data = stub.DBRead(key, length);
 
-        writer.println("" + (System.currentTimeMillis() - time));
+        long rTime = System.currentTimeMillis() - time;
+
+        time = System.currentTimeMillis();
+
+        data = decrypt(e, data, stub);
+
+        long eTime = System.currentTimeMillis() - time;
+
+        writer.println("" + eTime + "\t" + rTime + "\t" + (eTime + rTime));
       }
 
       System.out.println("Client End Read Request");
@@ -160,9 +191,17 @@ public class DBClient {
 
         long time = System.currentTimeMillis();
 
-        stub.DBWrite(key, encrypt(e, data));
+        data = encrypt(e, data, stub);
 
-        writer.println("" + (System.currentTimeMillis() - time));
+        long eTime = System.currentTimeMillis() - time;
+
+        time = System.currentTimeMillis();
+
+        stub.DBWrite(key, data);
+
+        long rTime = System.currentTimeMillis() - time;
+
+        writer.println("" + eTime + "\t" + rTime + "\t" + (eTime + rTime));
       }
 
       System.out.println("Client End Write Request");
@@ -211,13 +250,26 @@ public class DBClient {
           modulus, publicExponent);
     RSAPubKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
     RSAPriKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
+
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DH");
+    keyGen.initialize(1024);
+    DHKeyPair = keyGen.genKeyPair();
   }
 
-  public static byte[] encrypt(Encryption e, byte[] text) throws InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, NoSuchPaddingException, BadPaddingException
+  public static byte[] encrypt(Encryption e, byte[] text, DBRequest stub)
+    throws InvalidKeyException,
+           NoSuchAlgorithmException,
+           IllegalBlockSizeException,
+           NoSuchPaddingException,
+           BadPaddingException,
+           RemoteException,
+           InvalidKeySpecException
   {
     Cipher cipher = null;
     switch (e)
     {
+      case UnEncrypted:
+        return text;
       case AES:
         cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, AESKey);
@@ -233,8 +285,33 @@ public class DBClient {
       case RSA:
         return encrypt_rsa(text);
       case DH:
-        break;
+        return encrypt_dh(text, stub);
     }
+    return cipher.doFinal(text);
+  }
+
+  public static byte[] encrypt_dh(byte[] text, DBRequest stub)
+    throws NoSuchAlgorithmException,
+           RemoteException,
+           InvalidKeySpecException,
+           InvalidKeyException,
+           NoSuchPaddingException,
+           IllegalBlockSizeException,
+           BadPaddingException
+  {
+    PublicKey publicKey = KeyFactory.getInstance("DH").generatePublic(new X509EncodedKeySpec(stub.DBGetPublic()));
+
+    KeyAgreement keyAgreement = KeyAgreement.getInstance("DH");
+    keyAgreement.init(DHKeyPair.getPrivate());
+    keyAgreement.doPhase(publicKey, true);
+
+    Cipher cipher = null;
+    cipher = Cipher.getInstance("AES");
+    
+    SecretKey aesKey = new SecretKeySpec (keyAgreement.generateSecret(), 0, 16, "AES");
+
+    cipher.init(Cipher.ENCRYPT_MODE, aesKey);
+
     return cipher.doFinal(text);
   }
 
@@ -273,11 +350,20 @@ public class DBClient {
     return result;
   }
 
-  public static byte[] decrypt(Encryption e, byte[] text) throws InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, NoSuchPaddingException, BadPaddingException
+  public static byte[] decrypt(Encryption e, byte[] text, DBRequest stub)
+    throws InvalidKeyException,
+           NoSuchAlgorithmException,
+           IllegalBlockSizeException,
+           InvalidKeySpecException,
+           NoSuchPaddingException,
+           BadPaddingException,
+           RemoteException
   {
     Cipher cipher = null;
     switch (e)
     {
+      case UnEncrypted:
+        return text;
       case AES:
         cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.DECRYPT_MODE, AESKey);
@@ -293,8 +379,33 @@ public class DBClient {
       case RSA:
         return decrypt_rsa(text);
       case DH:
-        break;
+        return decrypt_dh(text, stub);
     }
+    return cipher.doFinal(text);
+  }
+
+  public static byte[] decrypt_dh(byte[] text, DBRequest stub)
+    throws NoSuchAlgorithmException,
+           RemoteException,
+           InvalidKeySpecException,
+           InvalidKeyException,
+           NoSuchPaddingException,
+           IllegalBlockSizeException,
+           BadPaddingException
+  {
+    PublicKey publicKey = KeyFactory.getInstance("DH").generatePublic(new X509EncodedKeySpec(stub.DBGetPublic()));
+
+    KeyAgreement keyAgreement = KeyAgreement.getInstance("DH");
+    keyAgreement.init(DHKeyPair.getPrivate());
+    keyAgreement.doPhase(publicKey, true);
+
+    Cipher cipher = null;
+    cipher = Cipher.getInstance("AES");
+    
+    SecretKey aesKey = new SecretKeySpec (keyAgreement.generateSecret(), 0, 16, "AES");
+
+    cipher.init(Cipher.DECRYPT_MODE, aesKey);
+
     return cipher.doFinal(text);
   }
 

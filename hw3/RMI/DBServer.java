@@ -3,6 +3,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
@@ -10,12 +14,17 @@ import java.io.IOException;
 
 public class DBServer implements DBRequest {
   private File dbFile;
+  private KeyPair DHKeyPair = null;
 
   private DBServer(String dbName)
-    throws FileNotFoundException
+    throws FileNotFoundException, NoSuchAlgorithmException
   {
     this.dbFile = new File(dbName);
     this.initializeDB();
+
+    KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("DH");
+    keyGenerator.initialize(1024);
+    this.DHKeyPair = keyGenerator.genKeyPair();
   }
 
   public synchronized int DBWrite(int key, byte[] value)
@@ -81,6 +90,11 @@ public class DBServer implements DBRequest {
     }
 
     return result;
+  }
+
+  public byte[] DBGetPublic()
+  {
+    return DHKeyPair.getPublic().getEncoded();
   }
 
   public void initializeDB()

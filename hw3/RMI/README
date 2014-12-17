@@ -18,5 +18,5 @@ To execute (Client):
 To execute the client, we should have server ipaddress and trace.
 
 java -cp ./:./DBRequest.jar -Djava.security.policy=policy \
-     DBClient <host(server)_address> <trace_file> <mode ('r' OR 'w')> \
+     DBClient <host(server)_address> <trace_file> \
               <timing_result_file>
