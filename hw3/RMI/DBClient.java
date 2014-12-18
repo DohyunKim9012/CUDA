@@ -45,6 +45,7 @@ public class DBClient {
   public static RSAPublicKey RSAPubKey = null;
   public static RSAPrivateKey RSAPriKey = null;
   public static KeyPair DHKeyPair = null;
+  public static PublicKey DHPubKey = null;
 
   public static void main(String[] args)
   {
@@ -78,7 +79,7 @@ public class DBClient {
       System.out.println("Connection Check");
       stub.DBWrite (0, new byte[1024]);
       stub.DBRead (0, 1024);
-      stub.DBGetPublic();
+      DHPubKey = KeyFactory.getInstance("DH").generatePublic(new X509EncodedKeySpec(stub.DBGetPublic()));
 
       System.out.println("Start Unencrypted Write");
       System.out.println("End Unencrypted Write @ " + doWrite (stub, trace, response + ".UnEncryptedWrite.out", Encryption.UnEncrypted) + " ms\n");
@@ -299,11 +300,9 @@ public class DBClient {
            IllegalBlockSizeException,
            BadPaddingException
   {
-    PublicKey publicKey = KeyFactory.getInstance("DH").generatePublic(new X509EncodedKeySpec(stub.DBGetPublic()));
-
     KeyAgreement keyAgreement = KeyAgreement.getInstance("DH");
     keyAgreement.init(DHKeyPair.getPrivate());
-    keyAgreement.doPhase(publicKey, true);
+    keyAgreement.doPhase(DHPubKey, true);
 
     Cipher cipher = null;
     cipher = Cipher.getInstance("AES");
@@ -322,7 +321,7 @@ public class DBClient {
 
     Cipher cipher = null;
     cipher = Cipher.getInstance("RSA");
-    cipher.init(Cipher.ENCRYPT_MODE, RSAPriKey);
+    cipher.init(Cipher.ENCRYPT_MODE, RSAPubKey);
 
     byte[] result = new byte[128*numBlocks];
 
@@ -413,7 +412,7 @@ public class DBClient {
   {
     Cipher cipher = null;
     cipher = Cipher.getInstance("RSA");
-    cipher.init(Cipher.DECRYPT_MODE, RSAPubKey);
+    cipher.init(Cipher.DECRYPT_MODE, RSAPriKey);
 
     int numBlocks = text.length / 128;
     byte[] result = new byte[numBlocks * 117];
